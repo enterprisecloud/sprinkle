@@ -1,28 +1,12 @@
 module Sprinkle
-  # = Verification Methods
+  # Usage:
   #
-  # As documented in Sprinkle::Package, you may define a block on a package
-  # which verifies that a package was installed correctly. If this verification
-  # block fails, Sprinkle will stop the script gracefully, raising the error.
-  # 
-  # In addition to checking post install if it was successfully, verification
-  # blocks are also ran before an install to see if a package is <em>already</em>
-  # installed. If this is the case, the package is skipped and Sprinkle continues
-  # with the next package. This behavior can be overriden by setting the -f flag on
-  # the sprinkle script or setting Sprinkle::OPTIONS[:force] to true if you're
-  # using sprinkle programmatically. 
-  #
-  # == An Example
-  #
-  # The following verifies that rails was installed correctly be checking to see
-  # if the 'rails' command is available on the command line:
-  #
-  #   package :rails do
-  #     gem 'rails'
-  #     
-  #     verify do
-  #       has_executable 'rails'
-  #     end
+  #   Sprinke::Verify.new("some description")  do
+  #     has_gem("sprinkle")
+  #     has_executables("ruby")
+  #     has_process("mysqld_safe")
+  #     has_file("/etc/my.cnf")
+  #     has_directory("/etc")
   #   end
   #
   # == Available Verifiers
@@ -59,8 +43,7 @@ module Sprinkle
   #     verify { has_magic_beans('ranch') }
   #   end
   class Verify
-    include Sprinkle::Configurable
-    attr_accessor :package, :description, :commands #:nodoc:
+    attr_accessor :description, :commands #:nodoc:
     
     class <<self
       # Register a verification module
@@ -69,10 +52,9 @@ module Sprinkle
       end
     end
     
-    def initialize(package, description = '', &block) #:nodoc:
+    def initialize(description = '', &block) #:nodoc:
       raise 'Verify requires a block.' unless block
       
-      @package = package
       @description = description
       @commands = []
       @options ||= {}
@@ -82,32 +64,29 @@ module Sprinkle
     end
     
     def process(roles, pre = false) #:nodoc:
-      assert_delivery
-      
-      description = @description.empty? ? @package.name : @description
+      description = @description
       
       if logger.debug?
-        logger.debug "#{@package.name}#{description} verification sequence: #{@commands.join('; ')} for roles: #{roles}\n"
+        logger.debug "#{description} verification sequence: #{@commands.join('; ')} for roles: #{roles}\n"
       end
       
       unless Sprinkle::OPTIONS[:testing]
         logger.info "#{" " * @options[:padding]}--> Verifying #{description}..."
         
-        unless @delivery.process(@package.name, @commands, roles, true)
+        unless @delivery.process(@commands, roles, true)
           # Verification failed, halt sprinkling gracefully.
-          raise Sprinkle::VerificationFailed.new(@package, description)
+          raise Sprinkle::VerificationFailed.new(description)
         end
       end
     end
   end
   
   class VerificationFailed < Exception #:nodoc:
-    attr_accessor :package, :description
+    attr_accessor :description
     
-    def initialize(package, description)
-      super("Verifying #{package.name}#{description} failed.")
+    def initialize(description)
+      super("Verifying #{description} failed.")
       
-      @package = package
       @description = description
     end
   end

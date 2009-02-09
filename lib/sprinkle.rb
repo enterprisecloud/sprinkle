@@ -8,8 +8,6 @@ ActiveSupport::Dependencies.load_paths << File.dirname(__FILE__)
 #ActiveSupport::Dependencies::RAILS_DEFAULT_LOGGER = Logger.new($stdout)
 #ActiveSupport::Dependencies.log_activity = true
 
-# Load up extensions to existing classes
-Dir[File.dirname(__FILE__) + '/sprinkle/extensions/*.rb'].each { |e| require e }
 # Load up the verifiers so they can register themselves
 Dir[File.dirname(__FILE__) + '/sprinkle/verifiers/*.rb'].each { |e| require e }
 
@@ -24,8 +22,6 @@ end
 # Define a logging target and understand packages, policies and deployment DSL
 #++
 class Object
-  include Sprinkle::Package, Sprinkle::Policy, Sprinkle::Deployment
-
   def logger # :nodoc:
     @@__log__ ||= ActiveSupport::BufferedLogger.new($stdout, ActiveSupport::BufferedLogger::Severity::INFO)
   end
